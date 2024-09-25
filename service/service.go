@@ -19,16 +19,22 @@ func GenerateShortURL() string {
 	return string(shortURL)
 }
 
-func CreateShortURL(longURL string) (string, error) {
-	shortURL := GenerateShortURL()
+func CreateShortURL(longURL string) (string, string, error) {
+	var shortCode string
+	var err error
 
-	err := storage.AddURL(shortURL, longURL)
-	if err != nil {
-		return "", err
+	for {
+		shortCode = GenerateShortURL()
+		err = storage.AddURL(shortCode, longURL)
+		if err == nil {
+			break
+		}
 	}
-	return baseURL + shortURL, nil
+
+	fullShortURL := baseURL + shortCode
+	return fullShortURL, shortCode, nil
 }
 
-func GetLongURL(shortURL string) (string, error) {
-	return storage.FindLongURL(shortURL)
+func GetLongURL(shortCode string) (string, error) {
+	return storage.FindLongURL(shortCode)
 }

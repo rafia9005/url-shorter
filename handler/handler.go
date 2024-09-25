@@ -11,6 +11,14 @@ type URLRequest struct {
 	URL string `json:"url"`
 }
 
+type URLResponse struct {
+	Status    string `json:"status"`
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	ShortURL  string `json:"short_url,omitempty"`
+	ShortCode string `json:"shortCode"`
+}
+
 func CreateShortURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var urlRequest URLRequest
@@ -27,42 +35,52 @@ func CreateShortURLHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		shortURL, err := service.CreateShortURL(urlRequest.URL)
+		shortURL, shortCode, err := service.CreateShortURL(urlRequest.URL)
 		if err != nil {
-			log.Printf("Error creating short URL: %v", err)
+			log.Printf("Error creating short URL for %s: %v", urlRequest.URL, err)
 			http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
 			return
 		}
 
+		response := URLResponse{
+			Status:    "success",
+			Code:      200,
+			Message:   "Short URL created successfully",
+			ShortURL:  shortURL,
+			ShortCode: shortCode,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		response := map[string]string{"short_url": shortURL}
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
+
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 }
 
 func RedirectHandler(w http.ResponseWriter, r *http.Request) {
-	shortURL := r.URL.Path[1:]
+	shortCode := r.URL.Path[1:]
 
-	longURL, err := service.GetLongURL(shortURL)
+	longURL, err := service.GetLongURL(shortCode)
 	if err != nil {
 		http.Error(w, "Short URL not found", http.StatusNotFound)
 		return
 	}
 
-	// Prepare the JSON response
 	response := map[string]interface{}{
-		"status":  "success",
-		"code":    200,
-		"message": "URL found",
-		"url":     longURL,
+		"status":    "success",
+		"code":      200,
+		"message":   "URL found",
+		"url":       longURL,
+		"shortCode": shortCode,
 	}
 
-	// Set the response header to application/json
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	// Send the JSON response
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

@@ -2,16 +2,19 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"url-shorter/handler"
+
+	"github.com/gorilla/handlers"
 )
 
 func main() {
+	http.HandleFunc("/create", handler.CreateShortURLHandler)
 	http.HandleFunc("/", handler.RedirectHandler)
 
-	http.HandleFunc("/create", handler.CreateShortURLHandler)
-
-	fmt.Println("Server berjalan di http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	corsOptions := handlers.AllowedOrigins([]string{"*"})
+	corsMethods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
+	corsHeaders := handlers.AllowedHeaders([]string{"Content-Type"})
+	fmt.Println("SERVER  IS RUNNING CIHUY ASELOLE")
+	http.ListenAndServe(":8080", handlers.CORS(corsOptions, corsMethods, corsHeaders)(http.DefaultServeMux))
 }

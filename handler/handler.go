@@ -51,5 +51,18 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, longURL, http.StatusMovedPermanently)
+	// Prepare the JSON response
+	response := map[string]interface{}{
+		"status":  "success",
+		"code":    200,
+		"message": "URL found",
+		"url":     longURL,
+	}
+
+	// Set the response header to application/json
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// Send the JSON response
+	json.NewEncoder(w).Encode(response)
 }
